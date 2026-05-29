@@ -5,70 +5,6 @@ import pandas as pd
 import statsmodels.api as sm
 
 
-def _coerce_estimate_value(estimate):
-    value = getattr(estimate, "value", None)
-
-    if value is None:
-        value = getattr(estimate, "estimate", None)
-
-    if value is None:
-        return None
-
-    return float(np.asarray(value).mean())
-
-
-def run_dowhy_estimators(df, treatment_col, outcome_col, graph):
-    from dowhy import CausalModel
-
-    model = CausalModel(
-        data=df,
-        treatment=treatment_col,
-        outcome=outcome_col,
-        graph=graph,
-    )
-
-    identified_estimand = model.identify_effect(
-        proceed_when_unidentifiable=True,
-    )
-
-    methods = {
-        "linear_regression": "backdoor.linear_regression",
-        "propensity_score_matching": "backdoor.propensity_score_matching",
-        "propensity_score_weighting": "backdoor.propensity_score_weighting",
-    }
-
-    estimates = {}
-
-    for name, method_name in methods.items():
-        try:
-            estimate = model.estimate_effect(
-                identified_estimand,
-                method_name=method_name,
-            )
-
-            estimates[name] = {
-                "value": _coerce_estimate_value(estimate),
-                "object": estimate,
-                "method_name": method_name,
-            }
-
-        except Exception as exc:
-            estimates[name] = {
-                "value": None,
-                "object": None,
-                "method_name": method_name,
-                "error": str(exc),
-            }
-
-    if estimates["linear_regression"]["object"] is None:
-        raise RuntimeError(
-            "DoWhy linear regression estimation failed: "
-            f"{estimates['linear_regression'].get('error')}"
-        )
-
-    return model, identified_estimand, estimates
-
-
 def clean_model_matrix(df, treatment_col, outcome_col, covariate_cols):
     covariate_cols = [
         c for c in covariate_cols
@@ -154,9 +90,16 @@ def bootstrap_logistic_ate(
     seed=42,
 ):
     rng = np.random.default_rng(seed)
-    data = df[[treatment_col, outcome_col] + covariate_cols].dropna().copy()
+
+    data, clean_covariates = clean_model_matrix(
+        df=df,
+        treatment_col=treatment_col,
+        outcome_col=outcome_col,
+        covariate_cols=covariate_cols,
+    )
 
     effects = []
+    failures = 0
 
     for _ in range(n_bootstrap):
         sample_idx = rng.choice(data.index, size=len(data), replace=True)
@@ -167,13 +110,13 @@ def bootstrap_logistic_ate(
                 sample,
                 treatment_col,
                 outcome_col,
-                covariate_cols,
+                clean_covariates,
             )["ate"]
 
             effects.append(effect)
 
         except Exception:
-            continue
+            failures += 1
 
     effects = np.array(effects)
 
@@ -181,7 +124,7 @@ def bootstrap_logistic_ate(
         data,
         treatment_col,
         outcome_col,
-        covariate_cols,
+        clean_covariates,
     )["ate"]
 
     return {
@@ -192,4 +135,36 @@ def bootstrap_logistic_ate(
         "lower_95_pp": float(np.percentile(effects, 2.5) * 100),
         "upper_95_pp": float(np.percentile(effects, 97.5) * 100),
         "successful_bootstraps": len(effects),
+        "failed_bootstraps": failures,
     }
+
+def clean_model_matrix(df, treatment_col, outcome_col, covariate_cols):
+    data = df[[treatment_col, outcome_col] + covariate_cols].dropna().copy()
+
+    # Never allow treatment/outcome inside covariates
+    covariate_cols = [
+        c for c in covariate_cols
+        if c not in [treatment_col, outcome_col]
+    ]
+
+    # Keep only numeric columns
+    cols = [treatment_col, outcome_col] + covariate_cols
+    data = data[cols].apply(pd.to_numeric, errors="coerce").dropna()
+
+    # Remove zero-variance covariates
+    usable_covariates = []
+    for col in covariate_cols:
+        if data[col].nunique() > 1:
+            usable_covariates.append(col)
+
+    data = data[[treatment_col, outcome_col] + usable_covariates]
+
+    # Remove duplicate columns
+    data = data.loc[:, ~data.T.duplicated()]
+
+    final_covariates = [
+        c for c in data.columns
+        if c not in [treatment_col, outcome_col]
+    ]
+
+    return data, final_covariates
