@@ -1,0 +1,25 @@
+
+Treatment:
+high_test_coverage
+
+Outcome:
+failure
+
+Estimated effect:
+-7.12 percentage points
+
+95% CI:
+-9.79 to -3.99 percentage points
+
+Predicted failure probability:
+If treated: 7.75%
+If untreated: 14.87%
+
+Recommendation status:
+recommend
+
+Interpretation:
+Under the stated DAG assumptions and observed data, high_test_coverage is estimated to change failure probability by -7.12 percentage points.
+
+Adjustment set:
+change_complexity, assignment_group_failure_rate_90d, change_frequency_90d, off_hours_deployment, approval_count, cab_involvement, rollback_plan_present, priority_High, priority_Low, priority_Medium, priority_nan, change_type_Normal, change_type_Standard, change_type_nan, environment_Production, environment_QA, environment_Staging, environment_nan, deployment_window_OffHours, deployment_window_Weekend, deployment_window_nan

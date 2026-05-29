@@ -1,0 +1,74 @@
+{
+  "treatment": "high_test_coverage",
+  "outcome": "failure",
+  "estimand": "ATE",
+  "adjustment_set": [
+    "change_complexity",
+    "assignment_group_failure_rate_90d",
+    "change_frequency_90d",
+    "off_hours_deployment",
+    "approval_count",
+    "cab_involvement",
+    "rollback_plan_present",
+    "priority_High",
+    "priority_Low",
+    "priority_Medium",
+    "priority_nan",
+    "change_type_Normal",
+    "change_type_Standard",
+    "change_type_nan",
+    "environment_Production",
+    "environment_QA",
+    "environment_Staging",
+    "environment_nan",
+    "deployment_window_OffHours",
+    "deployment_window_Weekend",
+    "deployment_window_nan"
+  ],
+  "data_sufficiency": {
+    "n": 5000,
+    "treated_count": 833,
+    "control_count": 4167,
+    "treated_failures": 23,
+    "control_failures": 694,
+    "overall_failure_rate": 0.1434
+  },
+  "dowhy_estimates": {
+    "linear_regression": -0.006721643898526308,
+    "propensity_score_matching": -0.0818,
+    "propensity_score_weighting": -0.10388659053801952
+  },
+  "main_estimate": {
+    "method": "logistic_average_marginal_effect",
+    "ate": -0.07118491610076369,
+    "ate_pp": -7.118491610076369,
+    "p_failure_if_treated": 0.07753215621571392,
+    "p_failure_if_untreated": 0.1487170723164776,
+    "ci_95_pp": [
+      -9.794733731955283,
+      -3.985903787982423
+    ]
+  },
+  "diagnostics": {
+    "overlap": {
+      "treated_min": 0.006836812725875265,
+      "treated_max": 0.979275031861441,
+      "control_min": 0.00021308738059580166,
+      "control_max": 0.9431469141012035,
+      "common_support_min": 0.006836812725875265,
+      "common_support_max": 0.9431469141012035,
+      "share_outside_common_support": 0.0418
+    },
+    "balance": {
+      "max_abs_smd_unweighted": 1.2606571279991516,
+      "max_abs_smd_weighted": 0.2845591015342419,
+      "share_weighted_smd_below_0_1": 0.8571428571428571
+    },
+    "refuters": {
+      "placebo_treatment_refuter": "Refute: Use a Placebo Treatment\nEstimated effect:-0.006721643898526308\nNew effect:0.0009892326844417997\np value:0.94\n",
+      "random_common_cause": "Refute: Add a random common cause\nEstimated effect:-0.006721643898526308\nNew effect:-0.006748537385832754\np value:0.88\n",
+      "data_subset_refuter": "Refute: Use a subset of data\nEstimated effect:-0.006721643898526308\nNew effect:-0.006333739128641686\np value:0.8799999999999999\n"
+    }
+  },
+  "recommendation_status": "recommend"
+}
